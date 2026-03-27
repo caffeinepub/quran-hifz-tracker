@@ -114,6 +114,7 @@ export interface HifzEntry {
 export interface UserProfile {
     name: string;
     role: string;
+    email: string;
 }
 export interface Student {
     id: bigint;
@@ -124,6 +125,24 @@ export interface Student {
     createdAt: Time;
     parentUserId?: Principal;
     teacherId: Principal;
+}
+export interface StudentWithTeacher {
+    id: bigint;
+    name: string;
+    studentClass: string;
+    section: string;
+    parentWhatsapp: string;
+    createdAt: Time;
+    parentUserId?: Principal;
+    teacherId: Principal;
+    teacherEmail: string;
+    teacherName: string;
+}
+export interface TeacherCredential {
+    email: string;
+    password: string;
+    name: string;
+    claimedBy?: Principal;
 }
 export interface StudentInput {
     name: string;
@@ -162,11 +181,19 @@ export interface backendInterface {
     getUserProfile(user: Principal): Promise<UserProfile | null>;
     isCallerAdmin(): Promise<boolean>;
     linkParentToStudent(studentId: bigint, parentUserId: Principal): Promise<void>;
+    adminDeleteStudent(studentId: bigint): Promise<void>;
+    adminGetAllStudents(): Promise<Array<StudentWithTeacher>>;
+    adminTransferStudent(studentId: bigint, targetTeacherEmail: string): Promise<void>;
+    claimTeacherAccount(email: string, password: string): Promise<void>;
+    createTeacherCredential(email: string, password: string, name: string): Promise<void>;
+    deleteTeacherCredential(email: string): Promise<void>;
+    listTeacherCredentials(): Promise<Array<TeacherCredential>>;
+    resetTeacherPassword(email: string, newPassword: string): Promise<void>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     updateHifzEntry(entryId: bigint, input: HifzEntryInput): Promise<void>;
     updateStudent(studentId: bigint, input: StudentInput): Promise<void>;
 }
-import type { HifzEntry as _HifzEntry, HifzEntryInput as _HifzEntryInput, Student as _Student, Time as _Time, UserProfile as _UserProfile, UserRole as _UserRole } from "./declarations/backend.did.d.ts";
+import type { HifzEntry as _HifzEntry, HifzEntryInput as _HifzEntryInput, Student as _Student, StudentWithTeacher as _StudentWithTeacher, TeacherCredential as _TeacherCredential, Time as _Time, UserProfile as _UserProfile, UserRole as _UserRole } from "./declarations/backend.did.d.ts";
 export class Backend implements backendInterface {
     constructor(private actor: ActorSubclass<_SERVICE>, private _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, private _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, private processError?: (error: unknown) => never){}
     async _initializeAccessControlWithSecret(arg0: string): Promise<void> {
@@ -444,6 +471,80 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async adminDeleteStudent(arg0: bigint): Promise<void> {
+        if (this.processError) {
+            try { return await this.actor.adminDeleteStudent(arg0); } catch (e) { this.processError(e); throw new Error("unreachable"); }
+        } else { return await this.actor.adminDeleteStudent(arg0); }
+    }
+    async adminGetAllStudents(): Promise<Array<StudentWithTeacher>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.adminGetAllStudents();
+                return result.map((v) => from_candid_StudentWithTeacher(v));
+            } catch (e) { this.processError(e); throw new Error("unreachable"); }
+        } else {
+            const result = await this.actor.adminGetAllStudents();
+            return result.map((v) => from_candid_StudentWithTeacher(v));
+        }
+    }
+    async adminTransferStudent(arg0: bigint, arg1: string): Promise<void> {
+        if (this.processError) {
+            try { return await this.actor.adminTransferStudent(arg0, arg1); } catch (e) { this.processError(e); throw new Error("unreachable"); }
+        } else { return await this.actor.adminTransferStudent(arg0, arg1); }
+    }
+    async claimTeacherAccount(arg0: string, arg1: string): Promise<void> {
+        if (this.processError) {
+            try { return await this.actor.claimTeacherAccount(arg0, arg1); } catch (e) { this.processError(e); throw new Error("unreachable"); }
+        } else { return await this.actor.claimTeacherAccount(arg0, arg1); }
+    }
+    async createTeacherCredential(arg0: string, arg1: string, arg2: string): Promise<void> {
+        if (this.processError) {
+            try { return await this.actor.createTeacherCredential(arg0, arg1, arg2); } catch (e) { this.processError(e); throw new Error("unreachable"); }
+        } else { return await this.actor.createTeacherCredential(arg0, arg1, arg2); }
+    }
+    async deleteTeacherCredential(arg0: string): Promise<void> {
+        if (this.processError) {
+            try { return await this.actor.deleteTeacherCredential(arg0); } catch (e) { this.processError(e); throw new Error("unreachable"); }
+        } else { return await this.actor.deleteTeacherCredential(arg0); }
+    }
+    async listTeacherCredentials(): Promise<Array<TeacherCredential>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.listTeacherCredentials();
+                return result.map((v) => from_candid_TeacherCredential(v));
+            } catch (e) { this.processError(e); throw new Error("unreachable"); }
+        } else {
+            const result = await this.actor.listTeacherCredentials();
+            return result.map((v) => from_candid_TeacherCredential(v));
+        }
+    }
+    async resetTeacherPassword(arg0: string, arg1: string): Promise<void> {
+        if (this.processError) {
+            try { return await this.actor.resetTeacherPassword(arg0, arg1); } catch (e) { this.processError(e); throw new Error("unreachable"); }
+        } else { return await this.actor.resetTeacherPassword(arg0, arg1); }
+    }
+}
+function from_candid_StudentWithTeacher(value: _StudentWithTeacher): StudentWithTeacher {
+    return {
+        id: value.id,
+        name: value.name,
+        studentClass: value.studentClass,
+        section: value.section,
+        parentWhatsapp: value.parentWhatsapp,
+        createdAt: value.createdAt,
+        parentUserId: value.parentUserId.length === 0 ? undefined : value.parentUserId[0],
+        teacherId: value.teacherId,
+        teacherEmail: value.teacherEmail,
+        teacherName: value.teacherName,
+    };
+}
+function from_candid_TeacherCredential(value: _TeacherCredential): TeacherCredential {
+    return {
+        email: value.email,
+        password: value.password,
+        name: value.name,
+        claimedBy: value.claimedBy.length === 0 ? undefined : value.claimedBy[0],
+    };
 }
 function from_candid_HifzEntry_n8(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _HifzEntry): HifzEntry {
     return from_candid_record_n9(_uploadFile, _downloadFile, value);

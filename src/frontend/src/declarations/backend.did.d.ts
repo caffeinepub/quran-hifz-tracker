@@ -47,14 +47,31 @@ export interface Student {
   'parentUserId' : [] | [Principal],
   'teacherId' : Principal,
 }
+export interface StudentWithTeacher {
+  'id' : bigint,
+  'name' : string,
+  'studentClass' : string,
+  'section' : string,
+  'parentWhatsapp' : string,
+  'createdAt' : Time,
+  'parentUserId' : [] | [Principal],
+  'teacherId' : Principal,
+  'teacherEmail' : string,
+  'teacherName' : string,
+}
 export type Time = bigint;
-export interface UserProfile { 'name' : string, 'role' : string }
+export interface UserProfile { 'name' : string, 'role' : string, 'email' : string }
+export interface TeacherCredential { 'email' : string, 'password' : string, 'name' : string, 'claimedBy' : [] | [Principal] }
 export type UserRole = { 'admin' : null } |
   { 'user' : null } |
   { 'guest' : null };
 export interface _SERVICE {
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
+  'adminDeleteStudent' : ActorMethod<[bigint], undefined>,
+  'adminGetAllStudents' : ActorMethod<[], Array<StudentWithTeacher>>,
+  'adminTransferStudent' : ActorMethod<[bigint, string], undefined>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
+  'claimTeacherAccount' : ActorMethod<[string, string], undefined>,
   'createHifzEntry' : ActorMethod<
     [
       {
@@ -71,8 +88,10 @@ export interface _SERVICE {
     bigint
   >,
   'createStudent' : ActorMethod<[StudentInput], bigint>,
+  'createTeacherCredential' : ActorMethod<[string, string, string], undefined>,
   'deleteHifzEntry' : ActorMethod<[bigint], undefined>,
   'deleteStudent' : ActorMethod<[bigint], undefined>,
+  'deleteTeacherCredential' : ActorMethod<[string], undefined>,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
   'getEntriesForStudent' : ActorMethod<[bigint], Array<HifzEntry>>,
@@ -83,6 +102,8 @@ export interface _SERVICE {
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
   'linkParentToStudent' : ActorMethod<[bigint, Principal], undefined>,
+  'listTeacherCredentials' : ActorMethod<[], Array<TeacherCredential>>,
+  'resetTeacherPassword' : ActorMethod<[string, string], undefined>,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
   'updateHifzEntry' : ActorMethod<[bigint, HifzEntryInput], undefined>,
   'updateStudent' : ActorMethod<[bigint, StudentInput], undefined>,

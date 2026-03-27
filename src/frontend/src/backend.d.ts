@@ -32,6 +32,13 @@ export interface HifzEntry {
 export interface UserProfile {
     name: string;
     role: string;
+    email: string;
+}
+export interface TeacherCredential {
+    email: string;
+    password: string;
+    name: string;
+    claimedBy?: Principal;
 }
 export interface Student {
     id: bigint;
@@ -42,6 +49,18 @@ export interface Student {
     createdAt: Time;
     parentUserId?: Principal;
     teacherId: Principal;
+}
+export interface StudentWithTeacher {
+    id: bigint;
+    name: string;
+    studentClass: string;
+    section: string;
+    parentWhatsapp: string;
+    createdAt: Time;
+    parentUserId?: Principal;
+    teacherId: Principal;
+    teacherEmail: string;
+    teacherName: string;
 }
 export enum UserRole {
     admin = "admin",
@@ -55,7 +74,11 @@ export interface StudentInput {
     parentWhatsapp: string;
 }
 export interface backendInterface {
+    adminDeleteStudent(studentId: bigint): Promise<void>;
+    adminGetAllStudents(): Promise<Array<StudentWithTeacher>>;
+    adminTransferStudent(studentId: bigint, targetTeacherEmail: string): Promise<void>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
+    claimTeacherAccount(email: string, password: string): Promise<void>;
     createHifzEntry(input: {
         studentId: bigint;
         jadeedAyatTo: bigint;
@@ -67,8 +90,10 @@ export interface backendInterface {
         murajaatDetails: string;
     }): Promise<bigint>;
     createStudent(input: StudentInput): Promise<bigint>;
+    createTeacherCredential(email: string, password: string, name: string): Promise<void>;
     deleteHifzEntry(entryId: bigint): Promise<void>;
     deleteStudent(studentId: bigint): Promise<void>;
+    deleteTeacherCredential(email: string): Promise<void>;
     getCallerUserProfile(): Promise<UserProfile | null>;
     getCallerUserRole(): Promise<UserRole>;
     getEntriesForStudent(studentId: bigint): Promise<Array<HifzEntry>>;
@@ -79,6 +104,8 @@ export interface backendInterface {
     getUserProfile(user: Principal): Promise<UserProfile | null>;
     isCallerAdmin(): Promise<boolean>;
     linkParentToStudent(studentId: bigint, parentUserId: Principal): Promise<void>;
+    listTeacherCredentials(): Promise<Array<TeacherCredential>>;
+    resetTeacherPassword(email: string, newPassword: string): Promise<void>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     updateHifzEntry(entryId: bigint, input: HifzEntryInput): Promise<void>;
     updateStudent(studentId: bigint, input: StudentInput): Promise<void>;

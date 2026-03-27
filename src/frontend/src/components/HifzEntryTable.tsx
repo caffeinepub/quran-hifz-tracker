@@ -10,9 +10,33 @@ import {
 import { Edit2, MessageCircle, Trash2 } from "lucide-react";
 import type { HifzEntry } from "../backend.d";
 
-function parseMurajaat(raw: string): [string, string] {
+function parseMurajaat(raw: string): [string, string, string] {
   const parts = raw.split("|");
-  return [parts[0] || "", parts[1] || ""];
+  return [parts[0] || "", parts[1] || "", parts[2] || ""];
+}
+
+function AttendanceBadge({ status }: { status: string }) {
+  if (!status) return <span className="text-muted-foreground">—</span>;
+
+  const styles: Record<string, string> = {
+    Present:
+      "bg-green-100 text-green-800 border-green-300 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700",
+    Absent:
+      "bg-red-100 text-red-800 border-red-300 dark:bg-red-900/30 dark:text-red-300 dark:border-red-700",
+    "Not Prepared":
+      "bg-orange-100 text-orange-800 border-orange-300 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-700",
+    Uzur: "bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700",
+  };
+
+  const cls = styles[status] || "bg-muted text-muted-foreground border-border";
+
+  return (
+    <span
+      className={`inline-block px-2 py-0.5 rounded-full text-[11px] font-semibold border ${cls}`}
+    >
+      {status}
+    </span>
+  );
 }
 
 interface Props {
@@ -55,6 +79,9 @@ export default function HifzEntryTable({
             <TableHead className="text-xs font-semibold text-muted-foreground w-24">
               Date
             </TableHead>
+            <TableHead className="text-xs font-semibold text-muted-foreground w-28">
+              Status
+            </TableHead>
             <TableHead className="text-xs font-semibold text-muted-foreground">
               Jadeed Surah
             </TableHead>
@@ -75,7 +102,9 @@ export default function HifzEntryTable({
         </TableHeader>
         <TableBody>
           {sorted.map((entry, i) => {
-            const [mJuz, mMarks] = parseMurajaat(entry.murajaatDetails);
+            const [mJuz, mMarks, attendanceStatus] = parseMurajaat(
+              entry.murajaatDetails,
+            );
             return (
               <TableRow
                 key={entry.id.toString()}
@@ -88,6 +117,9 @@ export default function HifzEntryTable({
                     month: "short",
                     year: "numeric",
                   })}
+                </TableCell>
+                <TableCell>
+                  <AttendanceBadge status={attendanceStatus} />
                 </TableCell>
                 <TableCell>
                   <span className="text-sm font-medium text-foreground">

@@ -3,6 +3,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type {
   HifzEntryInput,
   StudentInput,
+  StudentWithTeacher,
+  TeacherCredential,
   UserProfile,
   UserRole,
 } from "../backend.d";
@@ -17,7 +19,6 @@ export function useUserProfile() {
       try {
         return await actor.getCallerUserProfile();
       } catch {
-        // New users without a role will get an error; treat as no profile
         return null;
       }
     },
@@ -34,7 +35,6 @@ export function useUserRole() {
       try {
         return await actor.getCallerUserRole();
       } catch {
-        // New users without a role will get an error; treat as no role
         return null;
       }
     },
@@ -219,5 +219,117 @@ export function useAssignRole() {
       if (!actor) throw new Error("Not connected");
       return actor.assignCallerUserRole(user, role);
     },
+  });
+}
+
+export function useClaimTeacherAccount() {
+  const { actor } = useActor();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      email,
+      password,
+    }: { email: string; password: string }) => {
+      if (!actor) throw new Error("Not connected");
+      return actor.claimTeacherAccount(email, password);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["userProfile"] });
+      qc.invalidateQueries({ queryKey: ["userRole"] });
+    },
+  });
+}
+
+export function useListTeacherCredentials() {
+  const { actor, isFetching } = useActor();
+  return useQuery<TeacherCredential[]>({
+    queryKey: ["teacherCredentials"],
+    queryFn: async () => {
+      if (!actor) return [];
+      return actor.listTeacherCredentials();
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
+export function useCreateTeacherCredential() {
+  const { actor } = useActor();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      email,
+      password,
+      name,
+    }: { email: string; password: string; name: string }) => {
+      if (!actor) throw new Error("Not connected");
+      return actor.createTeacherCredential(email, password, name);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["teacherCredentials"] }),
+  });
+}
+
+export function useDeleteTeacherCredential() {
+  const { actor } = useActor();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (email: string) => {
+      if (!actor) throw new Error("Not connected");
+      return actor.deleteTeacherCredential(email);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["teacherCredentials"] }),
+  });
+}
+
+export function useResetTeacherPassword() {
+  const { actor } = useActor();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      email,
+      newPassword,
+    }: { email: string; newPassword: string }) => {
+      if (!actor) throw new Error("Not connected");
+      return actor.resetTeacherPassword(email, newPassword);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["teacherCredentials"] }),
+  });
+}
+
+export function useAdminGetAllStudents() {
+  const { actor, isFetching } = useActor();
+  return useQuery<StudentWithTeacher[]>({
+    queryKey: ["adminAllStudents"],
+    queryFn: async () => {
+      if (!actor) return [];
+      return actor.adminGetAllStudents();
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
+export function useAdminDeleteStudent() {
+  const { actor } = useActor();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (studentId: bigint) => {
+      if (!actor) throw new Error("Not connected");
+      return actor.adminDeleteStudent(studentId);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["adminAllStudents"] }),
+  });
+}
+
+export function useAdminTransferStudent() {
+  const { actor } = useActor();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      studentId,
+      targetTeacherEmail,
+    }: { studentId: bigint; targetTeacherEmail: string }) => {
+      if (!actor) throw new Error("Not connected");
+      return actor.adminTransferStudent(studentId, targetTeacherEmail);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["adminAllStudents"] }),
   });
 }

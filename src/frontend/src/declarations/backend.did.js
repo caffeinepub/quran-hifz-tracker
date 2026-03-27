@@ -13,7 +13,13 @@ export const UserRole = IDL.Variant({
   'user' : IDL.Null,
   'guest' : IDL.Null,
 });
-export const UserProfile = IDL.Record({ 'name' : IDL.Text, 'role' : IDL.Text });
+export const UserProfile = IDL.Record({ 'name' : IDL.Text, 'role' : IDL.Text, 'email' : IDL.Text });
+export const TeacherCredential = IDL.Record({
+  'email' : IDL.Text,
+  'password' : IDL.Text,
+  'name' : IDL.Text,
+  'claimedBy' : IDL.Opt(IDL.Principal),
+});
 export const Time = IDL.Int;
 export const HifzEntry = IDL.Record({
   'id' : IDL.Nat,
@@ -43,6 +49,18 @@ export const Student = IDL.Record({
   'parentUserId' : IDL.Opt(IDL.Principal),
   'teacherId' : IDL.Principal,
 });
+export const StudentWithTeacher = IDL.Record({
+  'id' : IDL.Nat,
+  'name' : IDL.Text,
+  'studentClass' : IDL.Text,
+  'section' : IDL.Text,
+  'parentWhatsapp' : IDL.Text,
+  'createdAt' : Time,
+  'parentUserId' : IDL.Opt(IDL.Principal),
+  'teacherId' : IDL.Principal,
+  'teacherEmail' : IDL.Text,
+  'teacherName' : IDL.Text,
+});
 export const HifzEntryInput = IDL.Record({
   'jadeedAyatTo' : IDL.Nat,
   'date' : IDL.Text,
@@ -55,7 +73,11 @@ export const HifzEntryInput = IDL.Record({
 
 export const idlService = IDL.Service({
   '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
+  'adminDeleteStudent' : IDL.Func([IDL.Nat], [], []),
+  'adminGetAllStudents' : IDL.Func([], [IDL.Vec(StudentWithTeacher)], ['query']),
+  'adminTransferStudent' : IDL.Func([IDL.Nat, IDL.Text], [], []),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
+  'claimTeacherAccount' : IDL.Func([IDL.Text, IDL.Text], [], []),
   'createHifzEntry' : IDL.Func(
       [
         IDL.Record({
@@ -73,8 +95,10 @@ export const idlService = IDL.Service({
       [],
     ),
   'createStudent' : IDL.Func([StudentInput], [IDL.Nat], []),
+  'createTeacherCredential' : IDL.Func([IDL.Text, IDL.Text, IDL.Text], [], []),
   'deleteHifzEntry' : IDL.Func([IDL.Nat], [], []),
   'deleteStudent' : IDL.Func([IDL.Nat], [], []),
+  'deleteTeacherCredential' : IDL.Func([IDL.Text], [], []),
   'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
   'getEntriesForStudent' : IDL.Func([IDL.Nat], [IDL.Vec(HifzEntry)], ['query']),
@@ -89,6 +113,8 @@ export const idlService = IDL.Service({
     ),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
   'linkParentToStudent' : IDL.Func([IDL.Nat, IDL.Principal], [], []),
+  'listTeacherCredentials' : IDL.Func([], [IDL.Vec(TeacherCredential)], ['query']),
+  'resetTeacherPassword' : IDL.Func([IDL.Text, IDL.Text], [], []),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
   'updateHifzEntry' : IDL.Func([IDL.Nat, HifzEntryInput], [], []),
   'updateStudent' : IDL.Func([IDL.Nat, StudentInput], [], []),
@@ -102,7 +128,13 @@ export const idlFactory = ({ IDL }) => {
     'user' : IDL.Null,
     'guest' : IDL.Null,
   });
-  const UserProfile = IDL.Record({ 'name' : IDL.Text, 'role' : IDL.Text });
+  const UserProfile = IDL.Record({ 'name' : IDL.Text, 'role' : IDL.Text, 'email' : IDL.Text });
+  const TeacherCredential = IDL.Record({
+    'email' : IDL.Text,
+    'password' : IDL.Text,
+    'name' : IDL.Text,
+    'claimedBy' : IDL.Opt(IDL.Principal),
+  });
   const Time = IDL.Int;
   const HifzEntry = IDL.Record({
     'id' : IDL.Nat,
@@ -132,6 +164,18 @@ export const idlFactory = ({ IDL }) => {
     'parentUserId' : IDL.Opt(IDL.Principal),
     'teacherId' : IDL.Principal,
   });
+  const StudentWithTeacher = IDL.Record({
+    'id' : IDL.Nat,
+    'name' : IDL.Text,
+    'studentClass' : IDL.Text,
+    'section' : IDL.Text,
+    'parentWhatsapp' : IDL.Text,
+    'createdAt' : Time,
+    'parentUserId' : IDL.Opt(IDL.Principal),
+    'teacherId' : IDL.Principal,
+    'teacherEmail' : IDL.Text,
+    'teacherName' : IDL.Text,
+  });
   const HifzEntryInput = IDL.Record({
     'jadeedAyatTo' : IDL.Nat,
     'date' : IDL.Text,
@@ -144,7 +188,11 @@ export const idlFactory = ({ IDL }) => {
   
   return IDL.Service({
     '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
+    'adminDeleteStudent' : IDL.Func([IDL.Nat], [], []),
+    'adminGetAllStudents' : IDL.Func([], [IDL.Vec(StudentWithTeacher)], ['query']),
+    'adminTransferStudent' : IDL.Func([IDL.Nat, IDL.Text], [], []),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
+    'claimTeacherAccount' : IDL.Func([IDL.Text, IDL.Text], [], []),
     'createHifzEntry' : IDL.Func(
         [
           IDL.Record({
@@ -162,8 +210,10 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'createStudent' : IDL.Func([StudentInput], [IDL.Nat], []),
+    'createTeacherCredential' : IDL.Func([IDL.Text, IDL.Text, IDL.Text], [], []),
     'deleteHifzEntry' : IDL.Func([IDL.Nat], [], []),
     'deleteStudent' : IDL.Func([IDL.Nat], [], []),
+    'deleteTeacherCredential' : IDL.Func([IDL.Text], [], []),
     'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
     'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
     'getEntriesForStudent' : IDL.Func(
@@ -182,6 +232,8 @@ export const idlFactory = ({ IDL }) => {
       ),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
     'linkParentToStudent' : IDL.Func([IDL.Nat, IDL.Principal], [], []),
+    'listTeacherCredentials' : IDL.Func([], [IDL.Vec(TeacherCredential)], ['query']),
+    'resetTeacherPassword' : IDL.Func([IDL.Text, IDL.Text], [], []),
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
     'updateHifzEntry' : IDL.Func([IDL.Nat, HifzEntryInput], [], []),
     'updateStudent' : IDL.Func([IDL.Nat, StudentInput], [], []),

@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Principal } from "@icp-sdk/core/principal";
 import {
   Check,
+  Download,
   Edit2,
   Link2,
   Loader2,
@@ -15,6 +16,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import * as XLSX from "xlsx";
 import type { HifzEntry } from "../backend.d";
 import Footer from "../components/Footer";
 import Header from "../components/Header";
@@ -38,7 +40,7 @@ const SAMPLE_ENTRIES: HifzEntry[] = [
     jadeedSurah: "Al-Baqarah",
     jadeedAyatFrom: 1n,
     jadeedAyatTo: 10n,
-    murajaatDetails: "Juz 30 full review",
+    murajaatDetails: "Juz 30||Present",
     juzHaaliMark: "A",
     notes: "Excellent recitation, strong tajweed",
   },
@@ -50,7 +52,7 @@ const SAMPLE_ENTRIES: HifzEntry[] = [
     jadeedSurah: "Al-Baqarah",
     jadeedAyatFrom: 11n,
     jadeedAyatTo: 20n,
-    murajaatDetails: "Surah Al-Mulk, Al-Insan",
+    murajaatDetails: "Juz 15|8|Present",
     juzHaaliMark: "B+",
     notes: "",
   },
@@ -62,7 +64,7 @@ const SAMPLE_ENTRIES: HifzEntry[] = [
     jadeedSurah: "Al-Fatihah",
     jadeedAyatFrom: 1n,
     jadeedAyatTo: 7n,
-    murajaatDetails: "Juz 29, 30",
+    murajaatDetails: "||Uzur",
     juzHaaliMark: "A+",
     notes: "Memorized perfectly, smooth flow",
   },
@@ -75,26 +77,34 @@ interface Props {
 
 function buildWhatsAppMessage(studentName: string, entry: HifzEntry): string {
   const parts = entry.murajaatDetails?.split("|");
-  let murajaatLine: string;
-  if (parts && parts.length >= 2) {
-    const juz = parts[0].trim();
-    const marks = parts[1].trim();
-    murajaatLine = marks
-      ? `*Muraja'at:* Juz ${juz} (Marks: ${marks})`
-      : `*Muraja'at:* Juz ${juz}`;
-  } else {
-    murajaatLine = `*Muraja'at:* ${entry.murajaatDetails}`;
-  }
+  const juz = parts?.[0]?.trim() || "";
+  const marks = parts?.[1]?.trim() || "";
+  const attendance = parts?.[2]?.trim() || "";
 
   const lines = [
     "Assalam o Alaikum,",
     "",
     `Daily Hifz update for *${studentName}* (${entry.date}):`,
     "",
-    `*Jadeed Hifz:* ${entry.jadeedSurah} (Ayat ${entry.jadeedAyatFrom}\u2013${entry.jadeedAyatTo})`,
-    murajaatLine,
-    `*Juz Haali Mark:* ${entry.juzHaaliMark}`,
   ];
+
+  if (attendance) {
+    lines.push(`*Attendance:* ${attendance}`);
+  }
+
+  lines.push(
+    `*Jadeed Hifz:* ${entry.jadeedSurah} (Ayat ${entry.jadeedAyatFrom}\u2013${entry.jadeedAyatTo})`,
+  );
+
+  if (juz) {
+    const murajaatLine = marks
+      ? `*Muraja'at:* ${juz} (Marks: ${marks})`
+      : `*Muraja'at:* ${juz}`;
+    lines.push(murajaatLine);
+  }
+
+  lines.push(`*Juz Haali Mark:* ${entry.juzHaaliMark}`);
+
   if (entry.notes) lines.push(`*Notes:* ${entry.notes}`);
   return lines.join("\n");
 }
@@ -168,6 +178,28 @@ export default function StudentDetail({ studentId, onBack }: Props) {
     const message = buildWhatsAppMessage(student?.name || "Student", entry);
     const url = `https://wa.me/${whatsapp.replace("+", "")}?text=${encodeURIComponent(message)}`;
     window.open(url, "_blank");
+  }
+
+  function handleDownloadReport() {
+    const rows = entries.map((entry) => {
+      const parts = entry.murajaatDetails?.split("|") || [];
+      return {
+        Date: entry.date,
+        "Jadeed Surah": entry.jadeedSurah,
+        "Ayat From": Number(entry.jadeedAyatFrom),
+        "Ayat To": Number(entry.jadeedAyatTo),
+        "Murajaat Juz": parts[0]?.trim() || "",
+        "Murajaat Marks": parts[1]?.trim() || "",
+        Attendance: parts[2]?.trim() || "",
+        "Juz Haali Mark": entry.juzHaaliMark,
+        Notes: entry.notes,
+      };
+    });
+
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Hifz Report");
+    XLSX.writeFile(wb, `${displayName}_hifz_report.xlsx`);
   }
 
   if (studentLoading) {
@@ -361,16 +393,27 @@ export default function StudentDetail({ studentId, onBack }: Props) {
             <h3 className="font-display text-lg font-semibold text-foreground">
               Hifz Entries
             </h3>
-            <Button
-              onClick={() => {
-                setEditingEntry(null);
-                setEntryFormOpen(true);
-              }}
-              className="bg-primary text-primary-foreground hover:bg-primary/90"
-              data-ocid="entries.open_modal_button"
-            >
-              <Plus className="w-4 h-4 mr-2" /> Add Entry
-            </Button>
+            <div className="flex items-center gap-2">
+              {!isSample && entries.length > 0 && (
+                <Button
+                  variant="outline"
+                  onClick={handleDownloadReport}
+                  data-ocid="entries.download_button"
+                >
+                  <Download className="w-4 h-4 mr-2" /> Download Report
+                </Button>
+              )}
+              <Button
+                onClick={() => {
+                  setEditingEntry(null);
+                  setEntryFormOpen(true);
+                }}
+                className="bg-primary text-primary-foreground hover:bg-primary/90"
+                data-ocid="entries.open_modal_button"
+              >
+                <Plus className="w-4 h-4 mr-2" /> Add Entry
+              </Button>
+            </div>
           </div>
 
           {entriesLoading ? (

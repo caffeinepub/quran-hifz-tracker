@@ -1,14 +1,38 @@
 import { Button } from "@/components/ui/button";
-import { BookOpen, Loader2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { BookOpen, Loader2, Lock, Mail } from "lucide-react";
 import { motion } from "motion/react";
+import { useState } from "react";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
 
 export default function AuthPage() {
   const { login, isLoggingIn } = useInternetIdentity();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleTeacherLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim() || !password.trim()) return;
+    setIsSubmitting(true);
+    sessionStorage.setItem(
+      "pendingTeacherClaim",
+      JSON.stringify({ email: email.trim(), password }),
+    );
+    try {
+      await login();
+    } catch {
+      sessionStorage.removeItem("pendingTeacherClaim");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const isPending = isLoggingIn || isSubmitting;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Top bar */}
       <header className="bg-sidebar border-b border-sidebar-border px-4 h-14 flex items-center">
         <div className="flex items-center gap-2">
           <div className="w-7 h-7 rounded bg-sidebar-primary flex items-center justify-center">
@@ -27,7 +51,6 @@ export default function AuthPage() {
           transition={{ duration: 0.4 }}
           className="w-full max-w-md"
         >
-          {/* Decorative geometric element */}
           <div className="mb-8 flex flex-col items-center">
             <div className="relative w-20 h-20 mb-4">
               <div className="absolute inset-0 rounded-full bg-primary/10" />
@@ -46,36 +69,66 @@ export default function AuthPage() {
           </div>
 
           <div className="bg-card border border-border rounded-lg p-6 shadow-card">
-            <div className="space-y-4">
-              <div className="text-center">
+            <form onSubmit={handleTeacherLogin} className="space-y-4">
+              <div className="text-center mb-4">
                 <h2 className="font-display text-lg font-semibold text-foreground mb-1">
-                  Welcome
+                  Sign In
                 </h2>
                 <p className="text-muted-foreground text-sm">
-                  Sign in to continue to your dashboard
+                  Use your email and password to sign in
                 </p>
               </div>
 
+              <div className="space-y-2">
+                <Label htmlFor="email">Email Address</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="your@email.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="pl-9"
+                    required
+                    data-ocid="auth.input"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="Enter your password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="pl-9"
+                    required
+                    data-ocid="auth.textarea"
+                  />
+                </div>
+              </div>
+
               <Button
+                type="submit"
                 className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-semibold h-11"
-                onClick={login}
-                disabled={isLoggingIn}
+                disabled={isPending || !email.trim() || !password.trim()}
                 data-ocid="auth.primary_button"
               >
-                {isLoggingIn ? (
+                {isPending ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Signing
                     in...
                   </>
                 ) : (
-                  "Sign In"
+                  "Login"
                 )}
               </Button>
-
-              <p className="text-center text-xs text-muted-foreground">
-                Teachers and parents both sign in here
-              </p>
-            </div>
+            </form>
           </div>
 
           <div className="mt-6 grid grid-cols-3 gap-4 text-center">

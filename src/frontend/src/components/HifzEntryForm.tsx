@@ -13,13 +13,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { ChevronDown, Loader2 } from "lucide-react";
 import { useState } from "react";
@@ -144,7 +137,34 @@ const SURAHS = [
   "An-Nas",
 ];
 
-const JUZ_LIST = Array.from({ length: 30 }, (_, i) => `Juz ${i + 1}`);
+const JUZ_LIST = Array.from({ length: 30 }, (_, i) => i + 1);
+
+const ATTENDANCE_OPTIONS = [
+  {
+    value: "Present",
+    label: "Present",
+    selected:
+      "bg-green-100 border-green-500 text-green-800 dark:bg-green-900/40 dark:border-green-500 dark:text-green-300",
+  },
+  {
+    value: "Absent",
+    label: "Absent",
+    selected:
+      "bg-red-100 border-red-500 text-red-800 dark:bg-red-900/40 dark:border-red-500 dark:text-red-300",
+  },
+  {
+    value: "Not Prepared",
+    label: "Not Prepared",
+    selected:
+      "bg-orange-100 border-orange-500 text-orange-800 dark:bg-orange-900/40 dark:border-orange-500 dark:text-orange-300",
+  },
+  {
+    value: "Uzur",
+    label: "Uzur",
+    selected:
+      "bg-blue-100 border-blue-500 text-blue-800 dark:bg-blue-900/40 dark:border-blue-500 dark:text-blue-300",
+  },
+];
 
 interface Props {
   studentId: bigint;
@@ -156,9 +176,9 @@ function today() {
   return new Date().toISOString().split("T")[0];
 }
 
-function parseMurajaat(raw: string): [string, string] {
+function parseMurajaat(raw: string): [string, string, string] {
   const parts = raw.split("|");
-  return [parts[0] || "", parts[1] || ""];
+  return [parts[0] || "", parts[1] || "", parts[2] || ""];
 }
 
 export default function HifzEntryForm({ studentId, entry, onClose }: Props) {
@@ -169,9 +189,13 @@ export default function HifzEntryForm({ studentId, entry, onClose }: Props) {
     useUpdateHifzEntry();
   const isPending = creating || updating;
 
+  const [attendance, setAttendance] = useState(
+    () => parseMurajaat(entry?.murajaatDetails || "")[2],
+  );
   const [date, setDate] = useState(entry?.date || today());
   const [jadeedSurah, setJadeedSurah] = useState(entry?.jadeedSurah || "");
   const [surahPickerOpen, setSurahPickerOpen] = useState(false);
+  const [juzPickerOpen, setJuzPickerOpen] = useState(false);
   const [ayatFrom, setAyatFrom] = useState(
     entry ? entry.jadeedAyatFrom.toString() : "",
   );
@@ -191,16 +215,16 @@ export default function HifzEntryForm({ studentId, entry, onClose }: Props) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!attendance) {
+      toast.error("Please select attendance status");
+      return;
+    }
     if (!jadeedSurah.trim() || !ayatFrom || !ayatTo) {
       toast.error("Please fill in all required fields");
       return;
     }
 
-    const murajaatDetails = murajaatJuz
-      ? murajaatMarks
-        ? `${murajaatJuz}|${murajaatMarks}`
-        : murajaatJuz
-      : "";
+    const murajaatDetails = `${murajaatJuz}|${murajaatMarks}|${attendance}`;
 
     const input = {
       studentId,
@@ -237,6 +261,35 @@ export default function HifzEntryForm({ studentId, entry, onClose }: Props) {
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Attendance Status */}
+          <div className="space-y-2">
+            <Label className="text-sm font-semibold">
+              Attendance Status <span className="text-destructive">*</span>
+            </Label>
+            <div className="grid grid-cols-4 gap-2">
+              {ATTENDANCE_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setAttendance(opt.value)}
+                  data-ocid="entries.toggle"
+                  className={`py-2 px-1 rounded-md text-xs font-semibold border-2 transition-all text-center ${
+                    attendance === opt.value
+                      ? opt.selected
+                      : "bg-muted border-border text-muted-foreground hover:bg-muted/80"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            {!attendance && (
+              <p className="text-xs text-muted-foreground">
+                Please select one option above
+              </p>
+            )}
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label htmlFor="entry-date" className="text-sm">
@@ -266,6 +319,7 @@ export default function HifzEntryForm({ studentId, entry, onClose }: Props) {
             </div>
           </div>
 
+          {/* Jadeed Surah Picker */}
           <div className="space-y-1.5">
             <Label className="text-sm">
               Jadeed Surah <span className="text-destructive">*</span>
@@ -287,12 +341,22 @@ export default function HifzEntryForm({ studentId, entry, onClose }: Props) {
                 </Button>
               </PopoverTrigger>
               <PopoverContent
-                className="w-[480px] p-2"
+                className="w-[min(480px,calc(100vw-2rem))] p-2"
                 align="start"
                 sideOffset={4}
               >
-                <div className="max-h-64 overflow-y-auto">
-                  <div className="grid grid-cols-4 gap-1">
+                <div
+                  className="max-h-64 overflow-y-auto overscroll-contain"
+                  onWheel={(e) => e.stopPropagation()}
+                  onTouchStart={(e) => e.stopPropagation()}
+                  onTouchMove={(e) => e.stopPropagation()}
+                  style={{
+                    WebkitOverflowScrolling: "touch",
+                    touchAction: "pan-y",
+                    overflowY: "auto",
+                  }}
+                >
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-1">
                     {SURAHS.map((s, i) => (
                       <button
                         key={s}
@@ -352,22 +416,79 @@ export default function HifzEntryForm({ studentId, entry, onClose }: Props) {
             </div>
           </div>
 
+          {/* Murajaat Juz Picker — 2 rows of 15 */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label className="text-sm">Murajaat Juz</Label>
-              <Select value={murajaatJuz} onValueChange={setMurajaatJuz}>
-                <SelectTrigger className="h-9" data-ocid="entries.select">
-                  <SelectValue placeholder="Select Juz" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">— None —</SelectItem>
-                  {JUZ_LIST.map((juz) => (
-                    <SelectItem key={juz} value={juz}>
-                      {juz}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Popover open={juzPickerOpen} onOpenChange={setJuzPickerOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full h-9 justify-between font-normal"
+                    data-ocid="entries.select"
+                  >
+                    <span
+                      className={murajaatJuz ? "" : "text-muted-foreground"}
+                    >
+                      {murajaatJuz || "Select Juz"}
+                    </span>
+                    <ChevronDown className="h-4 w-4 opacity-50 shrink-0" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent
+                  className="w-[min(400px,calc(100vw-2rem))] p-2"
+                  align="start"
+                  sideOffset={4}
+                >
+                  <div
+                    className="max-h-32 overflow-y-auto overscroll-contain"
+                    onWheel={(e) => e.stopPropagation()}
+                    style={{
+                      WebkitOverflowScrolling: "touch",
+                      touchAction: "pan-y",
+                      overflowY: "auto",
+                    }}
+                  >
+                    <div
+                      className="grid gap-1"
+                      style={{
+                        gridTemplateColumns: "repeat(15, minmax(0, 1fr))",
+                      }}
+                    >
+                      {/* Clear option spanning full width */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMurajaatJuz("");
+                          setJuzPickerOpen(false);
+                        }}
+                        style={{ gridColumn: "1 / -1" }}
+                        className="text-center px-2 py-1 rounded text-xs text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors border border-dashed border-muted-foreground/30 mb-1"
+                      >
+                        — None —
+                      </button>
+                      {JUZ_LIST.map((n) => (
+                        <button
+                          key={n}
+                          type="button"
+                          onClick={() => {
+                            setMurajaatJuz(`Juz ${n}`);
+                            setJuzPickerOpen(false);
+                          }}
+                          className={`text-center px-1 py-1.5 rounded text-xs font-medium hover:bg-accent hover:text-accent-foreground transition-colors ${
+                            murajaatJuz === `Juz ${n}`
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-muted/40"
+                          }`}
+                        >
+                          {n}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="murajaat-marks" className="text-sm">
