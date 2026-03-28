@@ -7,12 +7,22 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Edit2, MessageCircle, Trash2 } from "lucide-react";
+import { Edit2, MessageCircle, Target, Trash2 } from "lucide-react";
 import type { HifzEntry } from "../backend.d";
 
-function parseMurajaat(raw: string): [string, string, string] {
+// Format: juz|marks|attendance|targetJuz|targetPagesFrom|targetPagesTo
+function parseMurajaat(
+  raw: string,
+): [string, string, string, string, string, string] {
   const parts = raw.split("|");
-  return [parts[0] || "", parts[1] || "", parts[2] || ""];
+  return [
+    parts[0] || "",
+    parts[1] || "",
+    parts[2] || "",
+    parts[3] || "",
+    parts[4] || "",
+    parts[5] || "",
+  ];
 }
 
 function AttendanceBadge({ status }: { status: string }) {
@@ -102,9 +112,9 @@ export default function HifzEntryTable({
         </TableHeader>
         <TableBody>
           {sorted.map((entry, i) => {
-            const [mJuz, mMarks, attendanceStatus] = parseMurajaat(
-              entry.murajaatDetails,
-            );
+            const [mJuz, mMarks, attendanceStatus, tJuz, tPagesFrom, tPagesTo] =
+              parseMurajaat(entry.murajaatDetails);
+            const hasTarget = tJuz || tPagesFrom || tPagesTo;
             return (
               <TableRow
                 key={entry.id.toString()}
@@ -130,15 +140,36 @@ export default function HifzEntryTable({
                   {entry.jadeedAyatFrom.toString()}–
                   {entry.jadeedAyatTo.toString()}
                 </TableCell>
-                <TableCell className="text-xs max-w-[160px]">
+                <TableCell className="text-xs max-w-[200px]">
                   {mJuz && mJuz !== "none" ? (
-                    <div className="space-y-0.5">
+                    <div className="space-y-1">
                       <div className="font-medium text-foreground">{mJuz}</div>
                       {mMarks && (
                         <span className="inline-block px-1.5 py-0.5 rounded text-[11px] font-semibold bg-primary/10 text-primary">
                           {mMarks}
                         </span>
                       )}
+                      {hasTarget && (
+                        <div className="flex items-start gap-1 mt-0.5">
+                          <Target className="w-3 h-3 text-amber-500 mt-0.5 shrink-0" />
+                          <span className="text-[11px] text-amber-700 dark:text-amber-400 leading-tight">
+                            {tJuz}
+                            {tPagesFrom || tPagesTo
+                              ? `, pg ${tPagesFrom}${tPagesTo ? `–${tPagesTo}` : ""}`
+                              : ""}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  ) : hasTarget ? (
+                    <div className="flex items-start gap-1">
+                      <Target className="w-3 h-3 text-amber-500 mt-0.5 shrink-0" />
+                      <span className="text-[11px] text-amber-700 dark:text-amber-400 leading-tight">
+                        {tJuz}
+                        {tPagesFrom || tPagesTo
+                          ? `, pg ${tPagesFrom}${tPagesTo ? `–${tPagesTo}` : ""}`
+                          : ""}
+                      </span>
                     </div>
                   ) : (
                     <span className="text-muted-foreground">—</span>

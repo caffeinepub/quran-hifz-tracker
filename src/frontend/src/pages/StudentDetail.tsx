@@ -80,6 +80,9 @@ function buildWhatsAppMessage(studentName: string, entry: HifzEntry): string {
   const juz = parts?.[0]?.trim() || "";
   const marks = parts?.[1]?.trim() || "";
   const attendance = parts?.[2]?.trim() || "";
+  const targetJuz = parts?.[3]?.trim() || "";
+  const targetPagesFrom = parts?.[4]?.trim() || "";
+  const targetPagesTo = parts?.[5]?.trim() || "";
 
   const lines = [
     "Assalam o Alaikum,",
@@ -101,6 +104,15 @@ function buildWhatsAppMessage(studentName: string, entry: HifzEntry): string {
       ? `*Muraja'at:* ${juz} (Marks: ${marks})`
       : `*Muraja'at:* ${juz}`;
     lines.push(murajaatLine);
+  }
+
+  if (targetJuz || targetPagesFrom || targetPagesTo) {
+    let targetLine = `*Muraja'at Target:* `;
+    if (targetJuz) targetLine += targetJuz;
+    if (targetPagesFrom || targetPagesTo) {
+      targetLine += `, Pages ${targetPagesFrom || ""}\u2013${targetPagesTo || ""}`;
+    }
+    lines.push(targetLine);
   }
 
   lines.push(`*Juz Haali Mark:* ${entry.juzHaaliMark}`);
@@ -191,6 +203,9 @@ export default function StudentDetail({ studentId, onBack }: Props) {
         "Murajaat Juz": parts[0]?.trim() || "",
         "Murajaat Marks": parts[1]?.trim() || "",
         Attendance: parts[2]?.trim() || "",
+        "Murajaat Target Juz": parts[3]?.trim() || "",
+        "Murajaat Target Pages From": parts[4]?.trim() || "",
+        "Murajaat Target Pages To": parts[5]?.trim() || "",
         "Juz Haali Mark": entry.juzHaaliMark,
         Notes: entry.notes,
       };
