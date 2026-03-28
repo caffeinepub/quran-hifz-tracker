@@ -17,7 +17,10 @@ export function useUserProfile() {
     queryFn: async () => {
       if (!actor) return null;
       try {
-        return await actor.getCallerUserProfile();
+        const raw = await actor.getCallerUserProfile();
+        // Handle both plain object and Candid optional array [ UserProfile ] | []
+        if (Array.isArray(raw)) return (raw[0] as UserProfile) ?? null;
+        return raw as UserProfile | null;
       } catch {
         return null;
       }
@@ -33,7 +36,16 @@ export function useUserRole() {
     queryFn: async () => {
       if (!actor) return null;
       try {
-        return await actor.getCallerUserRole();
+        const raw = await actor.getCallerUserRole();
+        if (!raw) return null;
+        // Handle Candid variant object { admin: null } or string enum
+        if (typeof raw === "object" && raw !== null) {
+          if ("admin" in (raw as object)) return "admin";
+          if ("guest" in (raw as object)) return "guest";
+          return "user";
+        }
+        // String enum value
+        return String(raw);
       } catch {
         return null;
       }
