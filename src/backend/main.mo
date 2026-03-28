@@ -89,7 +89,6 @@ actor {
           case (null) {};
         };
         teacherCredentials.add(email, { email = cred.email; password = cred.password; name = cred.name; claimedBy = ?caller });
-        // Grant admin role if this is the admin email, otherwise teacher role
         if (email == ADMIN_EMAIL) {
           accessControlState.userRoles.add(caller, #admin);
           userProfiles.add(caller, { name = cred.name; role = "admin" });
@@ -137,13 +136,15 @@ actor {
   var studentsMigrated = false;
 
   system func postupgrade() {
+    // Migrate legacy students
     if (not studentsMigrated) {
       for ((k, v) in students.entries()) {
         studentsV2.add(k, { id = v.id; name = v.name; studentClass = ""; section = ""; parentWhatsapp = ""; teacherId = v.teacherId; parentUserId = v.parentUserId; createdAt = v.createdAt });
       };
       studentsMigrated := true;
     };
-    // Seed Zahra Tinwala teacher account if not already present
+
+    // Seed known teacher accounts
     if (teacherCredentials.get("zahratinwala52@gmail.com") == null) {
       teacherCredentials.add("zahratinwala52@gmail.com", {
         email = "zahratinwala52@gmail.com";
@@ -152,7 +153,6 @@ actor {
         claimedBy = null;
       });
     };
-    // Seed Admin account if not already present
     if (teacherCredentials.get(ADMIN_EMAIL) == null) {
       teacherCredentials.add(ADMIN_EMAIL, {
         email = ADMIN_EMAIL;
@@ -160,6 +160,34 @@ actor {
         name = "Admin";
         claimedBy = null;
       });
+    };
+
+    // CRITICAL: Re-populate roles, profiles, and emails from claimed credentials.
+    // accessControlState.userRoles resets on every canister upgrade, so we must
+    // restore all claimed principals their correct roles here.
+    for ((email, cred) in teacherCredentials.entries()) {
+      switch (cred.claimedBy) {
+        case (?principal) {
+          // Restore email mapping
+          userEmails.add(principal, email);
+          // Restore role and profile
+          if (email == ADMIN_EMAIL) {
+            accessControlState.userRoles.add(principal, #admin);
+            // Only overwrite profile if not already set (preserve existing name)
+            switch (userProfiles.get(principal)) {
+              case (null) { userProfiles.add(principal, { name = cred.name; role = "admin" }) };
+              case (?_) {};
+            };
+          } else {
+            accessControlState.userRoles.add(principal, #user);
+            switch (userProfiles.get(principal)) {
+              case (null) { userProfiles.add(principal, { name = cred.name; role = "user" }) };
+              case (?_) {};
+            };
+          };
+        };
+        case (null) {};
+      };
     };
   };
 
