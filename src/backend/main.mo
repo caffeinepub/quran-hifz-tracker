@@ -79,13 +79,29 @@ actor {
     teacherCredentials.add(email, { email; password; name; claimedBy = null });
   };
 
+  func transferStudentsToNewPrincipal(oldPrincipal : Principal, newPrincipal : Principal) {
+    for ((id, student) in studentsV2.entries()) {
+      if (student.teacherId == oldPrincipal) {
+        studentsV2.add(id, { id = student.id; name = student.name; studentClass = student.studentClass; section = student.section; parentWhatsapp = student.parentWhatsapp; teacherId = newPrincipal; parentUserId = student.parentUserId; createdAt = student.createdAt });
+      };
+    };
+  };
+
   public shared ({ caller }) func claimTeacherAccount(email : Text, password : Text) : async () {
     if (caller.isAnonymous()) { Runtime.trap("Unauthorized: Must be logged in") };
     switch (teacherCredentials.get(email)) {
       case (?cred) {
         if (cred.password != password) { Runtime.trap("Invalid email or password") };
+        // Allow re-claiming from any device/browser -- correct password is proof of ownership.
+        // If a different principal previously claimed this account, migrate their student data.
         switch (cred.claimedBy) {
-          case (?existing) { if (existing != caller) { Runtime.trap("This account is already in use") } };
+          case (?existing) {
+            if (existing != caller) {
+              transferStudentsToNewPrincipal(existing, caller);
+              accessControlState.userRoles.remove(existing);
+              userEmails.remove(existing);
+            };
+          };
           case (null) {};
         };
         teacherCredentials.add(email, { email = cred.email; password = cred.password; name = cred.name; claimedBy = ?caller });
@@ -136,54 +152,28 @@ actor {
   var studentsMigrated = false;
 
   system func postupgrade() {
-    // Migrate legacy students
     if (not studentsMigrated) {
       for ((k, v) in students.entries()) {
         studentsV2.add(k, { id = v.id; name = v.name; studentClass = ""; section = ""; parentWhatsapp = ""; teacherId = v.teacherId; parentUserId = v.parentUserId; createdAt = v.createdAt });
       };
       studentsMigrated := true;
     };
-
-    // Seed known teacher accounts
     if (teacherCredentials.get("zahratinwala52@gmail.com") == null) {
-      teacherCredentials.add("zahratinwala52@gmail.com", {
-        email = "zahratinwala52@gmail.com";
-        password = "msb123";
-        name = "Zahra Tinwala";
-        claimedBy = null;
-      });
+      teacherCredentials.add("zahratinwala52@gmail.com", { email = "zahratinwala52@gmail.com"; password = "msb123"; name = "Zahra Tinwala"; claimedBy = null });
     };
     if (teacherCredentials.get(ADMIN_EMAIL) == null) {
-      teacherCredentials.add(ADMIN_EMAIL, {
-        email = ADMIN_EMAIL;
-        password = "msb123";
-        name = "Admin";
-        claimedBy = null;
-      });
+      teacherCredentials.add(ADMIN_EMAIL, { email = ADMIN_EMAIL; password = "msb123"; name = "Admin"; claimedBy = null });
     };
-
-    // CRITICAL: Re-populate roles, profiles, and emails from claimed credentials.
-    // accessControlState.userRoles resets on every canister upgrade, so we must
-    // restore all claimed principals their correct roles here.
     for ((email, cred) in teacherCredentials.entries()) {
       switch (cred.claimedBy) {
         case (?principal) {
-          // Restore email mapping
           userEmails.add(principal, email);
-          // Restore role and profile
           if (email == ADMIN_EMAIL) {
             accessControlState.userRoles.add(principal, #admin);
-            // Only overwrite profile if not already set (preserve existing name)
-            switch (userProfiles.get(principal)) {
-              case (null) { userProfiles.add(principal, { name = cred.name; role = "admin" }) };
-              case (?_) {};
-            };
+            switch (userProfiles.get(principal)) { case (null) { userProfiles.add(principal, { name = cred.name; role = "admin" }) }; case (?_) {} };
           } else {
             accessControlState.userRoles.add(principal, #user);
-            switch (userProfiles.get(principal)) {
-              case (null) { userProfiles.add(principal, { name = cred.name; role = "user" }) };
-              case (?_) {};
-            };
+            switch (userProfiles.get(principal)) { case (null) { userProfiles.add(principal, { name = cred.name; role = "user" }) }; case (?_) {} };
           };
         };
         case (null) {};
@@ -342,7 +332,6 @@ actor {
     };
   };
 
-  // ---- Admin-only student management ----
   public type StudentWithTeacher = {
     id : Nat; name : Text; studentClass : Text; section : Text; parentWhatsapp : Text;
     teacherId : Principal; teacherEmail : Text; teacherName : Text;
