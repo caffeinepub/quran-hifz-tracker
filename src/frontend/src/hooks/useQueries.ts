@@ -345,3 +345,15 @@ export function useAdminTransferStudent() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["adminAllStudents"] }),
   });
 }
+
+export function useAdminUpdateStudent() {
+  const { actor } = useActor();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, input }: { id: bigint; input: StudentInput }) => {
+      if (!actor) throw new Error("Not connected");
+      return actor.adminUpdateStudent(id, input);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["adminAllStudents"] }),
+  });
+}

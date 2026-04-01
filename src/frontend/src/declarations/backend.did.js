@@ -76,6 +76,7 @@ export const idlService = IDL.Service({
   'adminDeleteStudent' : IDL.Func([IDL.Nat], [], []),
   'adminGetAllStudents' : IDL.Func([], [IDL.Vec(StudentWithTeacher)], ['query']),
   'adminTransferStudent' : IDL.Func([IDL.Nat, IDL.Text], [], []),
+    'adminUpdateStudent' : IDL.Func([IDL.Nat, StudentInput], [], []),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
   'claimTeacherAccount' : IDL.Func([IDL.Text, IDL.Text], [], []),
   'createHifzEntry' : IDL.Func(
@@ -191,6 +192,7 @@ export const idlFactory = ({ IDL }) => {
     'adminDeleteStudent' : IDL.Func([IDL.Nat], [], []),
     'adminGetAllStudents' : IDL.Func([], [IDL.Vec(StudentWithTeacher)], ['query']),
     'adminTransferStudent' : IDL.Func([IDL.Nat, IDL.Text], [], []),
+    'adminUpdateStudent' : IDL.Func([IDL.Nat, StudentInput], [], []),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
     'claimTeacherAccount' : IDL.Func([IDL.Text, IDL.Text], [], []),
     'createHifzEntry' : IDL.Func(

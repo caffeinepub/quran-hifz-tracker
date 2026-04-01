@@ -384,4 +384,14 @@ actor {
       case (null) { Runtime.trap("No teacher found with that email") };
     };
   };
+
+  public shared ({ caller }) func adminUpdateStudent(studentId : Nat, input : { name : Text; studentClass : Text; section : Text; parentWhatsapp : Text }) : async () {
+    if (not isAdminCaller(caller)) { Runtime.trap("Unauthorized: Admin only") };
+    switch (studentsV2.get(studentId)) {
+      case (?student) {
+        studentsV2.add(studentId, { id = student.id; name = input.name; studentClass = input.studentClass; section = input.section; parentWhatsapp = input.parentWhatsapp; teacherId = student.teacherId; parentUserId = student.parentUserId; createdAt = student.createdAt });
+      };
+      case (null) { Runtime.trap("Student not found") };
+    };
+  };
 };

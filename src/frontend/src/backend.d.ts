@@ -77,6 +77,7 @@ export interface backendInterface {
     adminDeleteStudent(studentId: bigint): Promise<void>;
     adminGetAllStudents(): Promise<Array<StudentWithTeacher>>;
     adminTransferStudent(studentId: bigint, targetTeacherEmail: string): Promise<void>;
+    adminUpdateStudent(studentId: bigint, input: StudentInput): Promise<void>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     claimTeacherAccount(email: string, password: string): Promise<void>;
     createHifzEntry(input: {

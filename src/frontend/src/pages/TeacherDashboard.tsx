@@ -10,14 +10,25 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { BookOpen, CalendarDays, Loader2, Plus, User } from "lucide-react";
+import {
+  BookOpen,
+  CalendarDays,
+  Loader2,
+  Pencil,
+  Plus,
+  User,
+} from "lucide-react";
 import { motion } from "motion/react";
 import { useState } from "react";
 import { toast } from "sonner";
 import type { Student } from "../backend.d";
 import Footer from "../components/Footer";
 import Header from "../components/Header";
-import { useCreateStudent, useStudentsForTeacher } from "../hooks/useQueries";
+import {
+  useCreateStudent,
+  useStudentsForTeacher,
+  useUpdateStudent,
+} from "../hooks/useQueries";
 
 // Sample data shown when no real data exists
 const SAMPLE_STUDENTS: Student[] = [
@@ -76,11 +87,21 @@ export default function TeacherDashboard({ onSelectStudent }: Props) {
   const { data: studentsRaw, isLoading } = useStudentsForTeacher();
   const { mutateAsync: createStudent, isPending: creating } =
     useCreateStudent();
+  const { mutateAsync: updateStudent, isPending: updating } =
+    useUpdateStudent();
+
   const [addOpen, setAddOpen] = useState(false);
   const [newName, setNewName] = useState("");
   const [newClass, setNewClass] = useState("");
   const [newSection, setNewSection] = useState("");
   const [newWhatsapp, setNewWhatsapp] = useState("");
+
+  const [editOpen, setEditOpen] = useState(false);
+  const [editStudent, setEditStudent] = useState<Student | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editClass, setEditClass] = useState("");
+  const [editSection, setEditSection] = useState("");
+  const [editWhatsapp, setEditWhatsapp] = useState("");
 
   const students =
     studentsRaw && studentsRaw.length > 0 ? studentsRaw : SAMPLE_STUDENTS;
@@ -91,6 +112,16 @@ export default function TeacherDashboard({ onSelectStudent }: Props) {
     setNewClass("");
     setNewSection("");
     setNewWhatsapp("");
+  }
+
+  function openEdit(student: Student, e: React.MouseEvent) {
+    e.stopPropagation();
+    setEditStudent(student);
+    setEditName(student.name);
+    setEditClass(student.studentClass);
+    setEditSection(student.section);
+    setEditWhatsapp(student.parentWhatsapp);
+    setEditOpen(true);
   }
 
   async function handleCreate(e: React.FormEvent) {
@@ -108,6 +139,27 @@ export default function TeacherDashboard({ onSelectStudent }: Props) {
       setAddOpen(false);
     } catch {
       toast.error("Failed to add student");
+    }
+  }
+
+  async function handleEdit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editStudent || !editName.trim()) return;
+    try {
+      await updateStudent({
+        id: editStudent.id,
+        input: {
+          name: editName.trim(),
+          studentClass: editClass.trim(),
+          section: editSection.trim(),
+          parentWhatsapp: editWhatsapp.trim(),
+        },
+      });
+      toast.success("Student updated successfully");
+      setEditOpen(false);
+      setEditStudent(null);
+    } catch {
+      toast.error("Failed to update student");
     }
   }
 
@@ -161,18 +213,31 @@ export default function TeacherDashboard({ onSelectStudent }: Props) {
                       <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
                         <User className="w-5 h-5 text-primary" />
                       </div>
-                      {isSample ? (
-                        <Badge variant="secondary" className="text-xs">
-                          Sample
-                        </Badge>
-                      ) : (
-                        student.studentClass && (
-                          <Badge variant="outline" className="text-xs">
-                            {student.studentClass}
-                            {student.section ? ` - ${student.section}` : ""}
+                      <div className="flex items-center gap-2">
+                        {isSample ? (
+                          <Badge variant="secondary" className="text-xs">
+                            Sample
                           </Badge>
-                        )
-                      )}
+                        ) : (
+                          student.studentClass && (
+                            <Badge variant="outline" className="text-xs">
+                              {student.studentClass}
+                              {student.section ? ` - ${student.section}` : ""}
+                            </Badge>
+                          )
+                        )}
+                        {!isSample && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-muted-foreground hover:text-primary"
+                            onClick={(e) => openEdit(student, e)}
+                            title="Edit student"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </Button>
+                        )}
+                      </div>
                     </div>
                     <h3 className="font-semibold text-foreground mb-1 group-hover:text-primary transition-colors">
                       {student.name}
@@ -228,6 +293,7 @@ export default function TeacherDashboard({ onSelectStudent }: Props) {
 
       <Footer />
 
+      {/* Add Student Dialog */}
       <Dialog
         open={addOpen}
         onOpenChange={(open) => {
@@ -308,6 +374,82 @@ export default function TeacherDashboard({ onSelectStudent }: Props) {
                   </>
                 ) : (
                   "Add Student"
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Student Dialog */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="font-display">Edit Student</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleEdit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-name">Student Name</Label>
+              <Input
+                id="edit-name"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                placeholder="e.g. Ahmed Al-Rashid"
+                autoFocus
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="edit-class">Class</Label>
+                <Input
+                  id="edit-class"
+                  value={editClass}
+                  onChange={(e) => setEditClass(e.target.value)}
+                  placeholder="e.g. Grade 5"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-section">Section</Label>
+                <Input
+                  id="edit-section"
+                  value={editSection}
+                  onChange={(e) => setEditSection(e.target.value)}
+                  placeholder="e.g. A"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-whatsapp">Parent WhatsApp Number</Label>
+              <Input
+                id="edit-whatsapp"
+                value={editWhatsapp}
+                onChange={(e) => setEditWhatsapp(e.target.value)}
+                placeholder="e.g. +923001234567"
+                type="tel"
+              />
+              <p className="text-xs text-muted-foreground">
+                Include country code (e.g. +92 for Pakistan)
+              </p>
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setEditOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={updating}
+                className="bg-primary text-primary-foreground"
+              >
+                {updating ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving...
+                  </>
+                ) : (
+                  "Save Changes"
                 )}
               </Button>
             </DialogFooter>

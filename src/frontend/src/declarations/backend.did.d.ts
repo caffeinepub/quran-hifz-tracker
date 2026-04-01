@@ -70,6 +70,7 @@ export interface _SERVICE {
   'adminDeleteStudent' : ActorMethod<[bigint], undefined>,
   'adminGetAllStudents' : ActorMethod<[], Array<StudentWithTeacher>>,
   'adminTransferStudent' : ActorMethod<[bigint, string], undefined>,
+  'adminUpdateStudent' : ActorMethod<[bigint, StudentInput], undefined>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
   'claimTeacherAccount' : ActorMethod<[string, string], undefined>,
   'createHifzEntry' : ActorMethod<

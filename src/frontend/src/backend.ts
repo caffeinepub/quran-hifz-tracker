@@ -184,6 +184,7 @@ export interface backendInterface {
     adminDeleteStudent(studentId: bigint): Promise<void>;
     adminGetAllStudents(): Promise<Array<StudentWithTeacher>>;
     adminTransferStudent(studentId: bigint, targetTeacherEmail: string): Promise<void>;
+    adminUpdateStudent(studentId: bigint, input: StudentInput): Promise<void>;
     claimTeacherAccount(email: string, password: string): Promise<void>;
     createTeacherCredential(email: string, password: string, name: string): Promise<void>;
     deleteTeacherCredential(email: string): Promise<void>;
@@ -491,6 +492,11 @@ export class Backend implements backendInterface {
         if (this.processError) {
             try { return await this.actor.adminTransferStudent(arg0, arg1); } catch (e) { this.processError(e); throw new Error("unreachable"); }
         } else { return await this.actor.adminTransferStudent(arg0, arg1); }
+    }
+    async adminUpdateStudent(arg0: bigint, arg1: StudentInput): Promise<void> {
+        if (this.processError) {
+            try { return await this.actor.adminUpdateStudent(arg0, arg1); } catch (e) { this.processError(e); throw new Error("unreachable"); }
+        } else { return await this.actor.adminUpdateStudent(arg0, arg1); }
     }
     async claimTeacherAccount(arg0: string, arg1: string): Promise<void> {
         if (this.processError) {

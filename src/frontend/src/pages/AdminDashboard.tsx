@@ -31,6 +31,7 @@ import {
   Circle,
   ClipboardCopy,
   Loader2,
+  Pencil,
   Plus,
   RefreshCw,
   Shield,
@@ -40,13 +41,14 @@ import {
 import { motion } from "motion/react";
 import { useState } from "react";
 import { toast } from "sonner";
-import type { StudentWithTeacher } from "../backend.d";
+import type { StudentInput, StudentWithTeacher } from "../backend.d";
 import Footer from "../components/Footer";
 import Header from "../components/Header";
 import {
   useAdminDeleteStudent,
   useAdminGetAllStudents,
   useAdminTransferStudent,
+  useAdminUpdateStudent,
   useCreateStudent,
   useCreateTeacherCredential,
   useDeleteTeacherCredential,
@@ -110,6 +112,8 @@ function StudentsTab({
     useAdminDeleteStudent();
   const { mutateAsync: transferStudent, isPending: transferring } =
     useAdminTransferStudent();
+  const { mutateAsync: updateStudent, isPending: updatingStudent } =
+    useAdminUpdateStudent();
 
   const [addOpen, setAddOpen] = useState(false);
   const [newName, setNewName] = useState("");
@@ -123,6 +127,11 @@ function StudentsTab({
   const [transferTarget, setTransferTarget] =
     useState<StudentWithTeacher | null>(null);
   const [selectedTeacherEmail, setSelectedTeacherEmail] = useState("");
+  const [editTarget, setEditTarget] = useState<StudentWithTeacher | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editClass, setEditClass] = useState("");
+  const [editSection, setEditSection] = useState("");
+  const [editWhatsapp, setEditWhatsapp] = useState("");
 
   function resetForm() {
     setNewName("");
@@ -172,6 +181,26 @@ function StudentsTab({
       setSelectedTeacherEmail("");
     } catch {
       toast.error("Failed to transfer student");
+    }
+  }
+
+  async function handleEdit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editTarget) return;
+    try {
+      await updateStudent({
+        id: editTarget.id,
+        input: {
+          name: editName.trim(),
+          studentClass: editClass.trim(),
+          section: editSection.trim(),
+          parentWhatsapp: editWhatsapp.trim(),
+        },
+      });
+      toast.success(`${editName} updated successfully`);
+      setEditTarget(null);
+    } catch {
+      toast.error("Failed to update student");
     }
   }
 
@@ -267,11 +296,26 @@ function StudentsTab({
                         size="sm"
                         variant="outline"
                         onClick={() => {
+                          setEditTarget(student);
+                          setEditName(student.name);
+                          setEditClass(student.studentClass);
+                          setEditSection(student.section);
+                          setEditWhatsapp(student.parentWhatsapp);
+                        }}
+                        disabled={updatingStudent}
+                        data-ocid={`students.edit_details_button.${i + 1}`}
+                      >
+                        <Pencil className="w-3 h-3 mr-1" /> Edit
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
                           setTransferTarget(student);
                           setSelectedTeacherEmail("");
                         }}
                         disabled={transferring}
-                        data-ocid={`students.edit_button.${i + 1}`}
+                        data-ocid={`students.transfer_button.${i + 1}`}
                       >
                         <ArrowRightLeft className="w-3 h-3 mr-1" /> Transfer
                       </Button>
@@ -374,6 +418,86 @@ function StudentsTab({
                   </>
                 ) : (
                   "Add Student"
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Student Dialog */}
+      <Dialog
+        open={!!editTarget}
+        onOpenChange={(open) => {
+          if (!open) setEditTarget(null);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="font-display">Edit Student</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleEdit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="admin-edit-name">Student Name</Label>
+              <Input
+                id="admin-edit-name"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                placeholder="e.g. Ahmed Al-Rashid"
+                autoFocus
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="admin-edit-class">Class</Label>
+                <Input
+                  id="admin-edit-class"
+                  value={editClass}
+                  onChange={(e) => setEditClass(e.target.value)}
+                  placeholder="e.g. Grade 5"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="admin-edit-section">Section</Label>
+                <Input
+                  id="admin-edit-section"
+                  value={editSection}
+                  onChange={(e) => setEditSection(e.target.value)}
+                  placeholder="e.g. A"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="admin-edit-whatsapp">
+                Parent WhatsApp Number
+              </Label>
+              <Input
+                id="admin-edit-whatsapp"
+                value={editWhatsapp}
+                onChange={(e) => setEditWhatsapp(e.target.value)}
+                placeholder="e.g. +923001234567"
+                type="tel"
+              />
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setEditTarget(null)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={updatingStudent}
+                className="bg-primary text-primary-foreground"
+              >
+                {updatingStudent ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving...
+                  </>
+                ) : (
+                  "Save Changes"
                 )}
               </Button>
             </DialogFooter>
