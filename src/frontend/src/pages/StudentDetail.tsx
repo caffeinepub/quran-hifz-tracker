@@ -85,7 +85,7 @@ function buildWhatsAppMessage(studentName: string, entry: HifzEntry): string {
   const targetPagesTo = parts?.[5]?.trim() || "";
 
   const lines = [
-    "Assalam o Alaikum,",
+    "بعد السلام الجميل،",
     "",
     `Daily Hifz update for *${studentName}* (${entry.date}):`,
     "",
