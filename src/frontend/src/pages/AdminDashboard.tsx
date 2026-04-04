@@ -44,6 +44,7 @@ import { toast } from "sonner";
 import type { StudentInput, StudentWithTeacher } from "../backend.d";
 import Footer from "../components/Footer";
 import Header from "../components/Header";
+import { PhoneInput } from "../components/PhoneInput";
 import {
   useAdminDeleteStudent,
   useAdminGetAllStudents,
@@ -383,16 +384,11 @@ function StudentsTab({
             </div>
             <div className="space-y-2">
               <Label htmlFor="s-whatsapp">Parent WhatsApp Number</Label>
-              <Input
+              <PhoneInput
                 id="s-whatsapp"
                 value={newWhatsapp}
-                onChange={(e) => setNewWhatsapp(e.target.value)}
-                placeholder="e.g. +923001234567"
-                type="tel"
+                onChange={(v) => setNewWhatsapp(v)}
               />
-              <p className="text-xs text-muted-foreground">
-                Include country code (e.g. +92 for Pakistan)
-              </p>
             </div>
             <DialogFooter>
               <Button
@@ -471,12 +467,10 @@ function StudentsTab({
               <Label htmlFor="admin-edit-whatsapp">
                 Parent WhatsApp Number
               </Label>
-              <Input
+              <PhoneInput
                 id="admin-edit-whatsapp"
                 value={editWhatsapp}
-                onChange={(e) => setEditWhatsapp(e.target.value)}
-                placeholder="e.g. +923001234567"
-                type="tel"
+                onChange={(v) => setEditWhatsapp(v)}
               />
             </div>
             <DialogFooter>

@@ -24,6 +24,7 @@ import { toast } from "sonner";
 import type { Student } from "../backend.d";
 import Footer from "../components/Footer";
 import Header from "../components/Header";
+import { PhoneInput } from "../components/PhoneInput";
 import {
   useCreateStudent,
   useStudentsForTeacher,
@@ -339,16 +340,11 @@ export default function TeacherDashboard({ onSelectStudent }: Props) {
             </div>
             <div className="space-y-2">
               <Label htmlFor="parent-whatsapp">Parent WhatsApp Number</Label>
-              <Input
+              <PhoneInput
                 id="parent-whatsapp"
                 value={newWhatsapp}
-                onChange={(e) => setNewWhatsapp(e.target.value)}
-                placeholder="e.g. +923001234567"
-                type="tel"
+                onChange={(v) => setNewWhatsapp(v)}
               />
-              <p className="text-xs text-muted-foreground">
-                Include country code (e.g. +92 for Pakistan)
-              </p>
             </div>
             <DialogFooter>
               <Button
@@ -420,16 +416,11 @@ export default function TeacherDashboard({ onSelectStudent }: Props) {
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit-whatsapp">Parent WhatsApp Number</Label>
-              <Input
+              <PhoneInput
                 id="edit-whatsapp"
                 value={editWhatsapp}
-                onChange={(e) => setEditWhatsapp(e.target.value)}
-                placeholder="e.g. +923001234567"
-                type="tel"
+                onChange={(v) => setEditWhatsapp(v)}
               />
-              <p className="text-xs text-muted-foreground">
-                Include country code (e.g. +92 for Pakistan)
-              </p>
             </div>
             <DialogFooter>
               <Button
