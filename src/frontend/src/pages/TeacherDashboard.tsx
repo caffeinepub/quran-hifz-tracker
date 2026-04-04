@@ -13,6 +13,9 @@ import { Label } from "@/components/ui/label";
 import {
   BookOpen,
   CalendarDays,
+  ChevronDown,
+  ChevronUp,
+  ChevronsUpDown,
   Loader2,
   Pencil,
   Plus,
@@ -80,6 +83,9 @@ const SAMPLE_STUDENTS: Student[] = [
   },
 ];
 
+type SortField = "name" | "class" | null;
+type SortDir = "asc" | "desc";
+
 interface Props {
   onSelectStudent: (id: bigint) => void;
 }
@@ -104,9 +110,52 @@ export default function TeacherDashboard({ onSelectStudent }: Props) {
   const [editSection, setEditSection] = useState("");
   const [editWhatsapp, setEditWhatsapp] = useState("");
 
-  const students =
+  const [sortField, setSortField] = useState<SortField>(null);
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
+
+  const rawStudents =
     studentsRaw && studentsRaw.length > 0 ? studentsRaw : SAMPLE_STUDENTS;
   const isSample = !studentsRaw || studentsRaw.length === 0;
+
+  // Apply sort
+  const students = sortField
+    ? [...rawStudents].sort((a, b) => {
+        let valA = "";
+        let valB = "";
+        if (sortField === "name") {
+          valA = a.name.toLowerCase();
+          valB = b.name.toLowerCase();
+        } else if (sortField === "class") {
+          valA = (a.studentClass || "").toLowerCase();
+          valB = (b.studentClass || "").toLowerCase();
+        }
+        const cmp = valA.localeCompare(valB);
+        return sortDir === "asc" ? cmp : -cmp;
+      })
+    : rawStudents;
+
+  function handleSort(field: SortField) {
+    if (sortField === field) {
+      if (sortDir === "asc") {
+        setSortDir("desc");
+      } else {
+        // desc → clear
+        setSortField(null);
+        setSortDir("asc");
+      }
+    } else {
+      setSortField(field);
+      setSortDir("asc");
+    }
+  }
+
+  function SortIcon({ field }: { field: SortField }) {
+    if (sortField !== field)
+      return <ChevronsUpDown className="w-3.5 h-3.5 text-muted-foreground" />;
+    if (sortDir === "asc")
+      return <ChevronUp className="w-3.5 h-3.5 text-primary" />;
+    return <ChevronDown className="w-3.5 h-3.5 text-primary" />;
+  }
 
   function resetForm() {
     setNewName("");
@@ -168,7 +217,7 @@ export default function TeacherDashboard({ onSelectStudent }: Props) {
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
       <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-8">
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="font-display text-2xl font-bold text-foreground">
               My Students
@@ -187,6 +236,56 @@ export default function TeacherDashboard({ onSelectStudent }: Props) {
             <Plus className="w-4 h-4 mr-2" /> Add Student
           </Button>
         </div>
+
+        {/* Sort bar */}
+        {!isLoading && students.length > 0 && (
+          <div
+            className="flex items-center gap-2 mb-5"
+            data-ocid="students.panel"
+          >
+            <span className="text-xs text-muted-foreground font-medium mr-1">
+              Sort by:
+            </span>
+            <button
+              type="button"
+              onClick={() => handleSort("name")}
+              className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-medium border transition-colors select-none cursor-pointer ${
+                sortField === "name"
+                  ? "border-primary/50 bg-primary/10 text-primary"
+                  : "border-border bg-background text-muted-foreground hover:text-foreground hover:border-border/80 hover:bg-muted/50"
+              }`}
+              data-ocid="students.toggle"
+            >
+              Name
+              <SortIcon field="name" />
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSort("class")}
+              className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-medium border transition-colors select-none cursor-pointer ${
+                sortField === "class"
+                  ? "border-primary/50 bg-primary/10 text-primary"
+                  : "border-border bg-background text-muted-foreground hover:text-foreground hover:border-border/80 hover:bg-muted/50"
+              }`}
+              data-ocid="students.toggle"
+            >
+              Class
+              <SortIcon field="class" />
+            </button>
+            {sortField && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSortField(null);
+                  setSortDir("asc");
+                }}
+                className="inline-flex items-center gap-1 px-2 py-1.5 rounded-md text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+        )}
 
         {isLoading ? (
           <div

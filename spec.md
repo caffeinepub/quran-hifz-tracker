@@ -1,24 +1,26 @@
 # Quran Hifz Tracker
 
 ## Current State
-Admin login uses Internet Identity (II) directly. Teachers use email+password which triggers II in the background. Backend recognizes admin via hardcoded email check.
+- TeacherDashboard shows students as cards in a grid (no sorting)
+- AdminDashboard StudentsTab shows students in a table with columns: Student Name, Class/Section, Teacher, Actions (no sorting)
+- AdminDashboard TeacherAccountsTab shows teachers in a table with columns: Name, Email, Status, Actions (no sorting)
 
 ## Requested Changes (Diff)
 
 ### Add
-- Admin credential seeded in backend: `murtazatinwala@msbinstitute.com` / `msb123`
-- `claimTeacherAccount` grants `#admin` role when claimed email == ADMIN_EMAIL
+- Sortable column headers on the Admin Students table: Student Name, Class/Section, Teacher — clicking a header sorts ascending, clicking again sorts descending, clicking a third time resets
+- Sort controls on the Teacher Dashboard student list: sort by Name (A-Z / Z-A) and Class — displayed as clickable header labels above the card grid or as a sort bar
+- Visual indicator (arrow icon) on currently sorted column/control showing sort direction
+- Sort state is local (no backend changes needed)
 
 ### Modify
-- `AuthPage.tsx`: Replace the Admin tab's Internet Identity button with the same email+password form as Teacher tab (unified login UI)
-- `App.tsx`: Remove the `hasPendingClaim` guard that bypassed profile setup only for admin; admin now goes through normal claim flow
-- Backend `postupgrade`: Seed admin credential alongside teacher credential
+- TeacherDashboard: add a sort bar above the student grid with Name and Class sort buttons
+- AdminDashboard StudentsTab: make Student Name, Class/Section, and Teacher column headers clickable with sort arrows
 
 ### Remove
-- Internet Identity-specific admin login UI (Shield icon, "Sign In with Internet Identity" button)
-- Two-tab auth layout (or collapse to single form since both roles use same login)
+- Nothing removed
 
 ## Implementation Plan
-1. Modify `main.mo`: seed admin credential in `postupgrade`, update `claimTeacherAccount` to set `#admin` for admin email
-2. Modify `AuthPage.tsx`: remove Admin tab with II button; use single email+password form for all users
-3. Modify `App.tsx`: simplify claim handling since both admin and teacher use same flow
+1. TeacherDashboard: Add `sortField` and `sortDir` state. Add a sort bar with "Name" and "Class" buttons showing ChevronUp/ChevronDown/ChevronsUpDown icons. Apply sort to the `students` array before rendering.
+2. AdminDashboard StudentsTab: Add `sortField` (name | class | teacher) and `sortDir` (asc | desc | none) state. Wrap each `<TableHead>` for those three columns with a click handler and render sort icon. Apply sort to the `students` array before rendering.
+3. No backend changes required.

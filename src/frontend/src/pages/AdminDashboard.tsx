@@ -28,6 +28,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   ArrowRightLeft,
   CheckCircle2,
+  ChevronDown,
+  ChevronUp,
+  ChevronsUpDown,
   Circle,
   ClipboardCopy,
   Loader2,
@@ -56,6 +59,9 @@ import {
   useListTeacherCredentials,
   useResetTeacherPassword,
 } from "../hooks/useQueries";
+
+type AdminSortField = "name" | "class" | "teacher" | null;
+type AdminSortDir = "asc" | "desc";
 
 interface Props {
   onSelectStudent: (id: bigint) => void;
@@ -133,6 +139,52 @@ function StudentsTab({
   const [editClass, setEditClass] = useState("");
   const [editSection, setEditSection] = useState("");
   const [editWhatsapp, setEditWhatsapp] = useState("");
+
+  const [sortField, setSortField] = useState<AdminSortField>(null);
+  const [sortDir, setSortDir] = useState<AdminSortDir>("asc");
+
+  function handleSort(field: AdminSortField) {
+    if (sortField === field) {
+      if (sortDir === "asc") {
+        setSortDir("desc");
+      } else {
+        setSortField(null);
+        setSortDir("asc");
+      }
+    } else {
+      setSortField(field);
+      setSortDir("asc");
+    }
+  }
+
+  function SortIcon({ field }: { field: AdminSortField }) {
+    if (sortField !== field)
+      return <ChevronsUpDown className="w-3.5 h-3.5 opacity-50" />;
+    if (sortDir === "asc")
+      return <ChevronUp className="w-3.5 h-3.5 text-primary" />;
+    return <ChevronDown className="w-3.5 h-3.5 text-primary" />;
+  }
+
+  // Apply sort
+  const sortedStudents =
+    sortField && students
+      ? [...students].sort((a, b) => {
+          let valA = "";
+          let valB = "";
+          if (sortField === "name") {
+            valA = a.name.toLowerCase();
+            valB = b.name.toLowerCase();
+          } else if (sortField === "class") {
+            valA = (a.studentClass || "").toLowerCase();
+            valB = (b.studentClass || "").toLowerCase();
+          } else if (sortField === "teacher") {
+            valA = (a.teacherName || "").toLowerCase();
+            valB = (b.teacherName || "").toLowerCase();
+          }
+          const cmp = valA.localeCompare(valB);
+          return sortDir === "asc" ? cmp : -cmp;
+        })
+      : students;
 
   function resetForm() {
     setNewName("");
@@ -249,14 +301,38 @@ function StudentsTab({
           <Table data-ocid="students.table">
             <TableHeader>
               <TableRow>
-                <TableHead>Student Name</TableHead>
-                <TableHead>Class / Section</TableHead>
-                <TableHead>Teacher</TableHead>
+                <TableHead
+                  className="cursor-pointer select-none hover:bg-muted/60 transition-colors"
+                  onClick={() => handleSort("name")}
+                >
+                  <div className="flex items-center gap-1">
+                    Student Name
+                    <SortIcon field="name" />
+                  </div>
+                </TableHead>
+                <TableHead
+                  className="cursor-pointer select-none hover:bg-muted/60 transition-colors"
+                  onClick={() => handleSort("class")}
+                >
+                  <div className="flex items-center gap-1">
+                    Class / Section
+                    <SortIcon field="class" />
+                  </div>
+                </TableHead>
+                <TableHead
+                  className="cursor-pointer select-none hover:bg-muted/60 transition-colors"
+                  onClick={() => handleSort("teacher")}
+                >
+                  <div className="flex items-center gap-1">
+                    Teacher
+                    <SortIcon field="teacher" />
+                  </div>
+                </TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {students.map((student, i) => (
+              {(sortedStudents ?? []).map((student, i) => (
                 <motion.tr
                   key={student.id.toString()}
                   initial={{ opacity: 0, y: 6 }}
@@ -304,7 +380,7 @@ function StudentsTab({
                           setEditWhatsapp(student.parentWhatsapp);
                         }}
                         disabled={updatingStudent}
-                        data-ocid={`students.edit_details_button.${i + 1}`}
+                        data-ocid={`students.edit_button.${i + 1}`}
                       >
                         <Pencil className="w-3 h-3 mr-1" /> Edit
                       </Button>
